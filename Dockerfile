@@ -2,10 +2,11 @@ FROM alpine:edge
 
 ARG OCAML_VERSION=4.08.1
 
+COPY ocaml-${OCAML_VERSION}.tar.gz /ocaml-${OCAML_VERSION}.tar.gz
+
 RUN apk update \
     && apk add --no-cache --virtual .build-deps build-base coreutils \
-	&& wget http://caml.inria.fr/pub/distrib/ocaml-${OCAML_VERSION:0:4}/ocaml-${OCAML_VERSION}.tar.gz \
-	&& tar xvf ocaml-${OCAML_VERSION}.tar.gz -C /tmp \
+	&& tar xvf /ocaml-${OCAML_VERSION}.tar.gz -C /tmp \
 	&& cd /tmp/ocaml-${OCAML_VERSION} \
     && ./configure \
     && make world \
@@ -19,16 +20,18 @@ RUN apk update \
 
 ARG UNISON_VERSION=2.51.2
 
+COPY v${UNISON_VERSION}.tar.gz /v${UNISON_VERSION}.tar.gz
+COPY patch.diff /patch.diff
+
 RUN apk update \
     && apk add --no-cache --virtual .build-deps \
         build-base curl git \
     && apk add --no-cache \
         bash inotify-tools monit supervisor rsync ruby \
-    && curl -L https://github.com/bcpierce00/unison/archive/v$UNISON_VERSION.tar.gz | tar zxv -C /tmp \
+    && tar zxvf /v${UNISON_VERSION}.tar.gz -C /tmp \
     && cd /tmp/unison-${UNISON_VERSION} \
-    && curl https://github.com/bcpierce00/unison/commit/23fa1292.diff?full_index=1 -o patch.diff \
-    && git apply patch.diff \
-    && rm patch.diff \
+    && git apply /patch.diff \
+    && rm /patch.diff \
     && sed -i -e 's/GLIBC_SUPPORT_INOTIFY 0/GLIBC_SUPPORT_INOTIFY 1/' src/fsmonitor/linux/inotify_stubs.c \
     && make UISTYLE=text NATIVE=true STATIC=true \
     && cp src/unison src/unison-fsmonitor /usr/local/bin \
